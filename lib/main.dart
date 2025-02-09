@@ -43,11 +43,17 @@ class _PageState extends State<Page> {
         child: SingleChildScrollView(
           padding: EdgeInsets.all(16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            spacing: 16.0,
             children: [
-              _ReadButton(onRead: (output) => setState(() => _output = output)),
-              _CopyButton(data: _output),
+              Row(
+                spacing: 16.0,
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _ReadButton(onRead: (output) => setState(() => _output = output)),
+                  _CopyButton(data: _output),
+                ],
+              ),
               if (_output != null) Text(_output!),
             ],
           ),
@@ -96,14 +102,17 @@ class _CopyButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FilledButton(
-      onPressed: data != null ? _copy : null,
+      onPressed: data != null ? () async => _copy(context) : null,
       child: Text("Copy"),
     );
   }
 
-  Future<void> _copy() async {
+  Future<void> _copy(BuildContext context) async {
     if (data == null) return;
     await Clipboard.setData(ClipboardData(text: data!));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copied!')));
+    }
   }
 }
 
