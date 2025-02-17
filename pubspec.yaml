@@ -12,6 +12,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_webrtc: ^0.12.8
   device_info_plus: ^11.3.0
+  audio_session: ^0.1.25
 
 dev_dependencies:
   flutter_test:

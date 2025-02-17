@@ -1,9 +1,10 @@
 import 'dart:io';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:flutter_web_rtc_device_reader/platform_reader.dart';
+import 'package:flutter_web_rtc_device_reader/reader/android_reader.dart';
+import 'package:flutter_web_rtc_device_reader/reader/ios_reader.dart';
 
 void main() {
   runApp(const App());
@@ -63,41 +64,46 @@ class _PageState extends State<Page> {
   }
 }
 
-class _ReadButton extends StatelessWidget {
+class _ReadButton extends StatefulWidget {
   final void Function(String) onRead;
+  const _ReadButton({required this.onRead});
 
-  const _ReadButton({super.key, required this.onRead});
+  @override
+  State<_ReadButton> createState() => _ReadButtonState();
+}
+
+class _ReadButtonState extends State<_ReadButton> {
+
+  bool _isReading = false;
 
   @override
   Widget build(BuildContext context) {
     return FilledButton(
-      onPressed: () async {
-        final devices = (await navigator.mediaDevices.enumerateDevices()).map((e) => e.formatted).join("\n\n");
-        final platform = "Platform: ${await _getPlatform()}";
-        final output = [platform, devices].join("\n\n");
-        onRead(output);
-      },
-      child: Text("Read"),
+      onPressed: _read,
+      child: _isReading ? _buildLoader() : Text("Read"),
     );
   }
 
-  Future<String> _getPlatform() async {
-    final plugin = DeviceInfoPlugin();
-    if (Platform.isAndroid) {
-      final info = await plugin.androidInfo;
-      return info.version.toMap().toString();
-    } else if (Platform.isIOS) {
-      final info = await plugin.iosInfo;
-      return info.toMap().toString();
-    }
-    return "";
+  Widget _buildLoader() => SizedBox.square(dimension: 16, child: CircularProgressIndicator(color: Colors.white));
+
+  Future<void> _read() async {
+    setState(() => _isReading = true);
+    final reader = Platform.isIOS ? IosReader() : AndroidReader();
+    final devices = await reader.read();
+    final platform = ["Platform:", await PlatformReader.read()].join("\n");
+    final output = [platform, devices].join("\n\n");
+    setState(() => _isReading = false);
+    widget.onRead(output);
   }
 }
+
+
+
 
 class _CopyButton extends StatelessWidget {
   final String? data;
 
-  const _CopyButton({super.key, required this.data});
+  const _CopyButton({required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +122,3 @@ class _CopyButton extends StatelessWidget {
   }
 }
 
-extension _MediaDeviceInfoX on MediaDeviceInfo {
-  String get formatted => "[deviceId: $deviceId, groupId: $groupId, kind: $kind, label: $label]";
-}
